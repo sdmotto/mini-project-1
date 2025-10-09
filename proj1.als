@@ -85,14 +85,25 @@ pred createMessage [m: Message] {
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes - Mail.drafts + Mail.uboxes]
-  noUserboxChange
+  noUserboxChange[]
 
   Mail.op' = CM
 }
 
 -- getMessage 
 pred getMessage [m: Message] {
+  -- pre
+  m.status = External
+  no mb: Mailbox | m in mb.messages
 
+  -- post
+  m.status' = Active
+  m in Mail.inbox'.messages
+
+  -- frame
+  noStatusChange[Message - m]
+  noMessageChange[sboxes - Mail.inbox + Mail.uboxes]
+  noUserboxChange[]
 
   Mail.op' = GM
 }
