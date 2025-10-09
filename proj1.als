@@ -5,7 +5,7 @@
 --
 -- Mini Project 1
 --
--- Name:  <your name(s) here>
+-- Name: Sam Motto, Muhammad Khalid
 --
 --===============================================
 
@@ -74,7 +74,18 @@ pred noUserboxChange {
 
 -- createMessage 
 pred createMessage [m: Message] {
+  -- pre
+  m.status = Fresh
+  no mb: Mailbox | m in mb.messages
 
+  -- post
+  m.status' = Active
+  m in Mail.drafts'.messages
+
+  -- frame
+  noStatusChange[Message - m]
+  noMessageChange[sboxes - Mail.drafts + Mail.uboxes]
+  noUserboxChange
 
   Mail.op' = CM
 }
