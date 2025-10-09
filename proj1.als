@@ -85,7 +85,7 @@ pred createMessage [m: Message] {
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes - Mail.drafts + Mail.uboxes]
-  noUserboxChange[]
+  noUserboxChange
 
   Mail.op' = CM
 }
@@ -103,13 +103,28 @@ pred getMessage [m: Message] {
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes - Mail.inbox + Mail.uboxes]
-  noUserboxChange[]
+  noUserboxChange
 
   Mail.op' = GM
 }
 
 -- moveMessage
 pred moveMessage [m: Message, mb: Mailbox] {
+  -- pre
+  m.status = Active
+  some oldBox: (Mailbox - mb) | m in oldBox.messages
+  m not in mb.messages
+  mb != Mail.trash
+
+  -- post
+  m.status' = Active
+  m in mb.messages'
+  no oldBox: (Mailbox - mb) | m in oldBox.messages'
+
+  -- frame
+  noStatusChange[Message - m]
+  noMessageChange[sboxes + Mail.uboxes - mb - m.~messages]
+  noUserboxChange
 
   Mail.op' = MM
 }
