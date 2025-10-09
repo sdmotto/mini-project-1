@@ -131,7 +131,19 @@ pred moveMessage [m: Message, mb: Mailbox] {
 
 -- deleteMessage
 pred deleteMessage [m: Message] {
+	-- pre: Message active, in some mailbox that isn't 'trash'
+	m.status = Active
+	some mb: (Mailbox - Mail.trash) | m in mb.messages
 
+	-- post: Message active, in trash, not in any other Mailbox
+	m.status' = Active
+	m in Mail.trash'.messages
+	no mb: (Mailbox - Mail.trash) | m in mb.messages'
+
+	-- frame: No status change for all messages other than this one, only trash and prev mailbox change
+	noStatusChange[Message - m]
+	noMessageChange[sboxes + Mail.uboxes - Mail.trash - m.~messages]
+	noUserboxChange
 
   Mail.op' = DM
 }
