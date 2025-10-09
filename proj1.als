@@ -153,7 +153,24 @@ pred deleteMessage [m: Message] {
 
 -- sendMessage
 pred sendMessage [m: Message] {
+	-- pre
+	// Message active, Currently in draft mailbox, not in any other mailbox
+	m.status = Active
+	m in Mail.drafts.messages
+	no mb: (Mailbox - Mail.drafts) | m in mb.messages
 
+	-- post
+	// Message active, in sent mailbox, not in any other mailbox
+	m.status' = Active
+	m in Mail.sent'.messages
+	no mb: (Mailbox - Mail.sent) | m in mb.messages'
+
+	-- frame
+	// No status change for all messages other than this one, only drafts and sent change
+	noStatusChange[Message - m]
+	noMessageChange[sboxes + Mail.uboxes - Mail.sent - Mail.drafts]
+	noUserboxChange
+	
 
   Mail.op' = SM
 }
