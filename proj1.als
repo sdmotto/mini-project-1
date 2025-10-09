@@ -177,7 +177,20 @@ pred sendMessage [m: Message] {
 
 -- emptyTrash
 pred emptyTrash {
+	-- pre
+	// There's at least one message in trash
+	some Mail.trash.messages
 
+	-- post
+	// All messages in trash are purged, there are no messages in the trash
+	all m: Mail.trash.messages | m.status' = Purged
+	no Mail.trash'.messages
+
+	-- frame
+	// No status change for all messages other than ones in trash & mailboxes other than trash
+	noStatusChange[Message - Mail.trash.messages]
+	noMessageChange[sboxes + Mail.uboxes - Mail.trash]
+	noUserboxChange
 
   Mail.op' = ET
 }
