@@ -201,7 +201,19 @@ pred emptyTrash {
 
 -- createMailbox
 pred createMailbox [mb: Mailbox] {
+	-- pre
+	// Given mailbox doesn't exist in set of all mailboxes
+	not mb in (sboxes + Mail.uboxes)
 
+	-- post
+	// Mailbox in uboxes and uboxes hasn't changed
+	Mail.uboxes' = Mail.uboxes + mb
+
+	-- frame
+	// No change for all messages, no change for sboxes, no change for anything IN uboxes
+	// uboxes is here because we only create the mailbox, we don't change anything in it
+	noStatusChange[Message]
+	noMessageChange[sboxes + Mail.uboxes]
 
   Mail.op' = CMB
 }
