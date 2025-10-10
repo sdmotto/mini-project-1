@@ -256,16 +256,16 @@ pred noOp {
 
 pred Init {
   -- There are no active or purged messages anywhere
-
+	no m: Message | m.status = Active or m.status = Purged
 
   -- The system mailboxes are all distinct
-
+	all disj mb1, mb2: sboxes | mb1 != mb2
 
   -- All mailboxes anywhere are empty
-
+	all mb: Mailbox | no mb.messages
 
   -- The set of user-created mailboxes is empty
-
+	no Mail.uboxes
 
   -- [Keep this tracking constraint intact]
   -- no operator generates the initial state
