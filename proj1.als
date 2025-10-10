@@ -389,9 +389,18 @@ pred T10 {
 }
 run T10 for 1 but 8 Object
 
-//run allTests {
-//  T1 T2 T3 T4 T5 T6 T7 T8 T9 T10
-//} for 5 but 11 Object, 12 steps 
+run allTests {
+	T1 
+	T2 
+	T3 
+	T4 
+	T5 
+	T6 
+	T7 
+	T8 
+	T9 
+	T10
+} for 5 but 11 Object, 12 steps 
 
 
 
@@ -401,38 +410,44 @@ run T10 for 1 but 8 Object
 
 assert V1 {
 --  Every active message in the system is in one of the app's mailboxes 
-
+	all m: Message | 
+		(m.status = Active implies m in (sboxes + Mail.uboxes).messages)
 }
 check V1 for 5 but 11 Object
 
  
 assert V2 {
 --  Inactive messages are in no mailboxes at all
-
+	all m: Message |
+		not (m.status = Active) implies no mb: Mailbox | m in mb.messages
 }
 check V2 for 5 but 11 Object
 
 assert V3 {
 -- Each of the user-created mailboxes differs from the predefined mailboxes
-
+	all mb: Mail.uboxes | mb not in sboxes
 }
 check V3 for 5 but 11 Object
 
 assert V4 {
 -- Every active message was once external or fresh.
-
+	all m: Message |
+		(m.status = Active implies 
+			once (m.status = External or m.status = Fresh))
 }
 check V4 for 5 but 11 Object
 
 assert V5 {
 -- Every user-created mailbox starts empty.
-
+// TODO: Not quite sure if this is right
+	all mb: Mail.uboxes | no mb.messages
 }
 check V5 for 5 but 11 Object
 
 assert V6 {
 -- User-created mailboxes stay in the system indefinitely or until they are deleted.
-
+	all mb: Mail.uboxes |
+		(mb in Mail.uboxes until not (mb in Mail.uboxes))
 }
 check V6 for 5 but 11 Object
 
