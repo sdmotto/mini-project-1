@@ -220,14 +220,32 @@ pred createMailbox [mb: Mailbox] {
 
 -- deleteMailbox
 pred deleteMailbox [mb: Mailbox] {
+	-- pre
+	// Mailbox is user-created and exists
+	mb in Mail.uboxes
+	mb not in sboxes
 
+	-- post
+	// Mailbox not in set of mailboxes, all messages status is purged, none exist in mailbox
+	Mail.uboxes' = Mail.uboxes + mb
+	all m: mb.messages | m.status' = Purged
+	no mb.messages'
+
+	-- frame
+	// No status change in messages not in given mailbox, 
+	noStatusChange[Message - mb.messages]
+	noMessageChange[sboxes + Mail.uboxes - mb]
 
   Mail.op' = DMB
 }
 
 -- noOp
 pred noOp {
-
+	-- frame
+	// we only need the frames to preserve state
+	noStatusChange[Message]
+	noMessageChange[sboxes + Mail.uboxes]
+	noUserboxChange
 
   Mail.op' = none 
 }
