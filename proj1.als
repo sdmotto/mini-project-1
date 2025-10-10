@@ -80,7 +80,7 @@ pred createMessage [m: Message] {
 
   -- post
   m.status' = Active
-  m in Mail.drafts'.messages
+  m in Mail.drafts.messages'
 
   -- frame
   noStatusChange[Message - m]
@@ -98,7 +98,7 @@ pred getMessage [m: Message] {
 
   -- post
   m.status' = Active
-  m in Mail.inbox'.messages
+  m in Mail.inbox.messages'
 
   -- frame
   noStatusChange[Message - m]
@@ -139,7 +139,7 @@ pred deleteMessage [m: Message] {
 	-- post
 	// Message active, in trash, not in any other Mailbox
 	m.status' = Active
-	m in Mail.trash'.messages
+	m in Mail.trash.messages'
 	no mb: (Mailbox - Mail.trash) | m in mb.messages'
 
 	-- frame
@@ -162,7 +162,7 @@ pred sendMessage [m: Message] {
 	-- post
 	// Message active, in sent mailbox, not in any other mailbox
 	m.status' = Active
-	m in Mail.sent'.messages
+	m in Mail.sent.messages'
 	no mb: (Mailbox - Mail.sent) | m in mb.messages'
 
 	-- frame
@@ -184,7 +184,7 @@ pred emptyTrash {
 	-- post
 	// All messages in trash are purged, there are no messages in the trash
 	all m: Mail.trash.messages | m.status' = Purged
-	no Mail.trash'.messages
+	no Mail.trash.messages'
 
 	-- frame
 	// No status change for all messages other than ones in trash & mailboxes other than trash
@@ -227,7 +227,7 @@ pred deleteMailbox [mb: Mailbox] {
 
 	-- post
 	// Mailbox not in set of mailboxes, all messages status is purged, none exist in mailbox
-	Mail.uboxes' = Mail.uboxes + mb
+	Mail.uboxes' = Mail.uboxes - mb
 	all m: mb.messages | m.status' = Purged
 	no mb.messages'
 
@@ -241,6 +241,8 @@ pred deleteMailbox [mb: Mailbox] {
 
 -- noOp
 pred noOp {
+	no m: Message | m.status in (Fresh + External)
+
 	-- frame
 	// we only need the frames to preserve state
 	noStatusChange[Message]
@@ -267,9 +269,10 @@ pred Init {
   -- The set of user-created mailboxes is empty
 	no Mail.uboxes
 
+  	some m: Message | m.status = Fresh or m.status = External
   -- [Keep this tracking constraint intact]
   -- no operator generates the initial state
-  Mail.op = none
+  	Mail.op = none
 }
 
 ------------------------
@@ -319,13 +322,13 @@ run {} for 10
 
 pred T1 {
   -- Eventually some message becomes active
-
+	eventually (some m: Message | m.status = Active)
 }
 run T1 for 1 but 8 Object
 
 pred T2 {
   -- The inbox contains more than one message at some point
-
+	
 }
 run T2 for 1 but 8 Object
 
@@ -381,9 +384,9 @@ pred T10 {
 }
 run T10 for 1 but 8 Object
 
-run allTests {
-  T1 T2 T3 T4 T5 T6 T7 T8 T9 T10
-} for 5 but 11 Object, 12 steps 
+//run allTests {
+//  T1 T2 T3 T4 T5 T6 T7 T8 T9 T10
+//} for 5 but 11 Object, 12 steps 
 
 
 
