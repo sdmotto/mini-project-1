@@ -322,64 +322,69 @@ run {} for 10
 
 pred T1 {
   -- Eventually some message becomes active
-	eventually (some m: Message | m.status = Active)
+	eventually some m: Message | m.status = Active
 }
 run T1 for 1 but 8 Object
 
 pred T2 {
   -- The inbox contains more than one message at some point
-	
+	eventually #(Mail.inbox.messages) > 1
 }
 run T2 for 1 but 8 Object
 
 pred T3 {
   -- The trash mailbox eventually contains messages and
   -- becomes empty some time later
+	eventually some Mail.trash.messages and eventually no Mail.trash.messages
 
 }
 run T3 for 1 but 8 Object
 
 pred T4 {
   -- Eventually some message in the drafts mailbox moves to the sent mailbox
-
+	eventually some m: Message | m in Mail.drafts.messages and eventually m in Mail.sent.messages
 }
 run T4 for 1 but 8 Object
 
 pred T5 {
   -- Eventually there is a user mailbox with messages in it
-
+	eventually some mb: Mailbox | (mb in Mail.uboxes and some mb.messages)
 }
 run T5 for 1 but 8 Object 
 
 pred T6 {
   -- Eventually the inbox gets two messages in a row from outside
-
+	eventually (#(Mail.inbox.messages) = 1 and after #(Mail.inbox.messages) = 2)
 }
 run T6 for 1 but 8 Object
 
 pred T7 {
   -- Eventually some user mailbox gets deleted
-
+	eventually some mb: Mail.uboxes | after (no mb.messages and mb not in Mail.uboxes)
 }
 run T7 for 1 but 8 Object
 
 pred T8 {
   -- Eventually the inbox has messages
+	eventually some Mail.inbox.messages
 
   -- Every message in the inbox at any point is eventually removed 
-
+	always all m: Mail.inbox.messages | 
+		(eventually m not in Mail.inbox.messages)
 }
 run T8 for 1 but 8 Object
 
 pred T9 {
   -- The trash mail box is emptied of its messages eventually
-
+	always all m: Mail.trash.messages |
+		(eventually m not in Mail.trash.messages)
 }
 run T9 for 1 but 8 Object
 
 pred T10 {
   -- Eventually an external message arrives and 
   -- after that nothing happens anymore
+	eventually (some m: Message | m in Mail.inbox.messages and (after always noOp))
 
 }
 run T10 for 1 but 8 Object
