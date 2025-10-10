@@ -453,31 +453,36 @@ check V6 for 5 but 11 Object
 
 assert V7 {
 -- Messages are sent exclusively from the draft mailbox 
-
+	all m: Message |
+		m in Mail.sent.messages implies before m in Mail.drafts.messages
 }
 check V7 for 5 but 11 Object
 
 assert V8 {
 -- The app's mailboxes contain only active messages
-
+	all m: (sboxes+Mail.uboxes).messages | m.status = Active
 }
 check V8 for 5 but 11 Object
 
 assert V9 {
 -- Every received message goes through the inbox
-
+	all m: (sboxes+Mail.uboxes).messages | once m in Mail.inbox.messages
 }
 check V9 for 5 but 11 Object
 
 assert V10 {
 -- Purged message are purged forever
-
+// if it's purged once not necessarily in initial state, it will always be purged
+	all m: Message | once (m.status = Purged) implies always (m.status = Purged)
 }
 check V10 for 5 but 11 Object
 
 assert V11 {
 -- No messages in the system can ever (re)acquire External status
-
+	no m: Message | 
+		once (m.status = External) and 
+		eventually (m.status = External and 
+		before m.status != External)
 }
 check V11 for 5 but 11 Object
 
