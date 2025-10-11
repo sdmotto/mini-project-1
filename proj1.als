@@ -488,34 +488,42 @@ check V11 for 5 but 11 Object
 
 assert V12 {
 -- The trash mailbox starts empty and stays so until a message is delete, if any
-
+// trash will start empty till something is deleted or it will never have anything in it if 
+	(no Mail.trash.messages until some m: Message | m in Mail.trash.messages)
+	or (always no Mail.trash.messages)
 }
 check V12 for 5 but 11 Object
 
 assert V13 {
 -- To purge an active message one must first delete the message 
 -- or delete the mailbox that contains it.
-
+	all m: Message |
+		((once m.status = Active) and (eventually m.status = Purged)) implies
+			// messsage deleted and status purged
+			(Mail.op = DM and m.status = Purged) or
+			// mailbox deleted and the message was in the mailbox
+			(Mail.op = DMB and some mb: Mailbox | m in mb.messages)
 }
 check V13 for 5 but 11 Object
 
 assert V14 {
 -- Every message in the trash mailbox mailbox is there 
 -- because it had been previously deleted
-
+	all m: Message | m in Mail.trash.messages implies once (Mail.op = DM)
 }
 check V14 for 5 but 11 Object
 
 assert Extra15 {
 -- Every message in a user-created mailbox ultimately comes from a system mailbox.
-
+	all m: Message | m in Mail.uboxes.messages implies once m in sboxes.messages
 }
 check Extra15 for 5 but 11 Object
 
 assert Extra16 {
 -- A purged message that was never in the trash mailbox must have been 
 -- in a user mailbox that was later deleted
-
+	all m: Message | ((m.status = Purged) and (not once m in Mail.trash.messages)) implies
+		((once m in Mail.uboxes.messages) and (eventually (some mb: Mailbox | m in mb.messages and Mail.op = DMB)))
 }
 check Extra16 for 5 but 11 Object
 
