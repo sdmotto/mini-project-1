@@ -533,58 +533,58 @@ check Extra16 for 5 but 11 Object
 -------------------------------
 
 -- It is possible for messages to stay in the inbox indefinitely
--- Negated into: 
+-- Negated into: If a message is in the inbox, it will eventually leave
 assert I1 {
-
+  always all m: Message | m in Mail.inbox.messages implies eventually m not in Mail.inbox.messages
 }
 check I1 for 5 but 11 Object
 
 -- A message in the sent mailbox need not be there because it was sent.
--- Negated into: 
+-- Negated into: Every message in the sent mailbox must have been sent
 assert I2 {
-
+  always all m: Message | m in Mail.sent.messages implies once Mail.op = SM
 }
 check I2 for 5 but 11 Object
 
 -- A message that leaves the inbox may later reappear there.
--- Negated into:
+-- Negated into: Once a message leaves the inbox, it never returns
 assert I3 {
-
+  always all m: Message | m not in Mail.inbox.messages and once m in Mail.inbox.messages implies always m not in Mail.inbox.messages
 }
 check I3 for 5 but 11 Object
 
 -- A deleted message may go back to the mailbox it was deleted from.
--- Negated into:
+-- Negated into: A deleted message will never go back to the mailbox it was deleted from
 assert I4 {
-
+  always all m: Message, mb: Mailbox - Mail.trash | m in Mail.trash.messages and once m in mb.messages implies always m not in mb.messages
 }
 check I4 for 5 but 11 Object
 
 -- Some external messages may never be received
--- Negated into:
+-- Negated into: All external messages are eventually received
 assert I5 {
-
+  always all m: Message | m.status = External implies eventually m in Mail.inbox.messages
 }
 check I5 for 5 but 11 Object
 
 -- A deleted mailbox may reappear in the system
--- Negated into:
+-- Negated into: Once a mailbox is deleted, it never returns
 assert I6 {
-
+  always all mb: Mailbox | mb not in Mail.uboxes and once mb in Mail.uboxes implies always mb not in Mail.uboxes
 }
 check I6 for 5 but 11 Object
 
 -- It is possible to reach a point 
 -- where none of the system mailboxes change content anymore
--- Negated into: 
+-- Negated into: The system mailboxes will always eventually change
 assert I7 {
-
+  always eventually some mb: sboxes | mb.messages' != mb.messages
 }
 check I7 for 5 but 11 Object
 
 -- Just deleting a message does not guarantee that it gets eventually purged
--- Negated into: 
+-- Negated into: Every message that is sent to the trash is purged
 assert I8 {
-
+  always all m: Message | once m in Mail.trash.messages implies eventually m.status = Purged
 }
 check I8 for 5 but 11 Object
