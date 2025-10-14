@@ -456,11 +456,12 @@ check V4 for 5 but 11 Object
 
 assert V5 {
 -- Every user-created mailbox starts empty.
-	always (Mail.op = CMB implies one mb: Mail.uboxes' - Mail.uboxes | no mb.messages')
+	all mb: Mail.uboxes | no mb.messages
 }
 check V5 for 5 but 11 Object
 
 assert V6 {
+-- User-created mailboxes stay in the system indefinitely or until they are deleted.
    always all mb: Mailbox | once (mb in Mail.uboxes) implies always (mb in Mail.uboxes or once (Mail.op = DMB and mb not in Mail.uboxes))
 }
 check V6 for 5 but 11 Object
@@ -556,18 +557,14 @@ check I1 for 5 but 11 Object
 -- A message in the sent mailbox need not be there because it was sent.
 -- Negated into: Every message in the sent mailbox must have been sent
 assert I2 {
-  always all m: Message |
-    (m in Mail.sent.messages) implies
-      once (Mail.op = SM and m in Mail.sent.messages)
+  always all m: Message | m in Mail.sent.messages implies once Mail.op = SM
 }
 check I2 for 5 but 11 Object
 
 -- A message that leaves the inbox may later reappear there.
 -- Negated into: Once a message leaves the inbox, it never returns
 assert I3 {
-  always all m: Message |
-    (once m in Mail.inbox.messages and m not in Mail.inbox.messages)
-      implies always m not in Mail.inbox.messages
+  always all m: Message |(once m in Mail.inbox.messages and after m not in Mail.inbox.messages) implies always m not in Mail.inbox.messages
 }
 check I3 for 5 but 11 Object
 
