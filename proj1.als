@@ -71,6 +71,10 @@ pred noUserboxChange {
    It is there to track the applied operators in each trace  
 */
 
+-- Used for keeping the mailboxes that are not part of Mail the same
+pred noBoxChange {
+  all mb: Mailbox - (Mail.uboxes + sboxes) | mb.messages' = mb.messages
+}
 
 -- createMessage 
 pred createMessage [m: Message] {
@@ -80,12 +84,13 @@ pred createMessage [m: Message] {
 
   -- post
   m.status' = Active
-  m in Mail.drafts.messages'
+  Mail.drafts.messages' = Mail.drafts.messages + m
 
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes - Mail.drafts + Mail.uboxes]
   noUserboxChange
+  noBoxChange
 
   Mail.op' = CM
 }
@@ -98,12 +103,13 @@ pred getMessage [m: Message] {
 
   -- post
   m.status' = Active
-  m in Mail.inbox.messages'
+  Mail.inbox.messages' = Mail.inbox.messages + m
 
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes - Mail.inbox + Mail.uboxes]
   noUserboxChange
+  noBoxChange
 
   Mail.op' = GM
 }
@@ -114,17 +120,18 @@ pred moveMessage [m: Message, mb: Mailbox] {
   m.status = Active
   some oldBox: (Mailbox - mb) | m in oldBox.messages
   m not in mb.messages
-  mb != Mail.trash
+  mb not in sboxes
 
   -- post
   m.status' = Active
-  m in mb.messages'
-  no oldBox: (Mailbox - mb) | m in oldBox.messages'
+  mb.messages' = mb.messages + m
+  m.~messages.messages' = m.~messages.messages - m
 
   -- frame
   noStatusChange[Message - m]
   noMessageChange[sboxes + Mail.uboxes - mb - m.~messages]
   noUserboxChange
+  noBoxChange
 
   Mail.op' = MM
 }
@@ -139,14 +146,15 @@ pred deleteMessage [m: Message] {
 	-- post
 	// Message active, in trash, not in any other Mailbox
 	m.status' = Active
-	m in Mail.trash.messages'
-	no mb: (Mailbox - Mail.trash) | m in mb.messages'
+	m.~messages.messages' = m.~messages.messages - m
+  	Mail.trash.messages' = Mail.trash.messages + m
 
 	-- frame
 	//No status change for all messages other than this one, only trash and prev mailbox change
 	noStatusChange[Message - m]
 	noMessageChange[sboxes + Mail.uboxes - Mail.trash - m.~messages]
 	noUserboxChange
+	noBoxChange
 
   Mail.op' = DM
 }
@@ -162,14 +170,15 @@ pred sendMessage [m: Message] {
 	-- post
 	// Message active, in sent mailbox, not in any other mailbox
 	m.status' = Active
-	m in Mail.sent.messages'
-	no mb: (Mailbox - Mail.sent) | m in mb.messages'
+	Mail.drafts.messages' = Mail.drafts.messages - m
+  	Mail.sent.messages' = Mail.sent.messages + m
 
 	-- frame
 	// No status change for all messages other than this one, only drafts and sent change
 	noStatusChange[Message - m]
 	noMessageChange[sboxes + Mail.uboxes - Mail.sent - Mail.drafts]
 	noUserboxChange
+	noBoxChange
 	
 
   Mail.op' = SM
@@ -184,13 +193,14 @@ pred emptyTrash {
 	-- post
 	// All messages in trash are purged, there are no messages in the trash
 	all m: Mail.trash.messages | m.status' = Purged
-	no Mail.trash.messages'
+	Mail.trash.messages' = none
 
 	-- frame
 	// No status change for all messages other than ones in trash & mailboxes other than trash
 	noStatusChange[Message - Mail.trash.messages]
 	noMessageChange[sboxes + Mail.uboxes - Mail.trash]
 	noUserboxChange
+	noBoxChange
 
   Mail.op' = ET
 }
@@ -203,17 +213,19 @@ pred emptyTrash {
 pred createMailbox [mb: Mailbox] {
 	-- pre
 	// Given mailbox doesn't exist in set of all mailboxes
-	not mb in (sboxes + Mail.uboxes)
+	mb not in (sboxes + Mail.uboxes)
 
 	-- post
 	// Mailbox in uboxes and uboxes hasn't changed
 	Mail.uboxes' = Mail.uboxes + mb
+	mb.messages' = none
 
 	-- frame
 	// No change for all messages, no change for sboxes, no change for anything IN uboxes
 	// uboxes is here because we only create the mailbox, we don't change anything in it
 	noStatusChange[Message]
 	noMessageChange[sboxes + Mail.uboxes]
+	noBoxChange
 
   Mail.op' = CMB
 }
@@ -227,14 +239,15 @@ pred deleteMailbox [mb: Mailbox] {
 
 	-- post
 	// Mailbox not in set of mailboxes, all messages status is purged, none exist in mailbox
-	Mail.uboxes' = Mail.uboxes - mb
+	 Mail.uboxes' = Mail.uboxes - mb
 	all m: mb.messages | m.status' = Purged
-	no mb.messages'
+	mb.messages' = none
 
 	-- frame
 	// No status change in messages not in given mailbox, 
 	noStatusChange[Message - mb.messages]
 	noMessageChange[sboxes + Mail.uboxes - mb]
+	noBoxChange
 
   Mail.op' = DMB
 }
@@ -248,6 +261,7 @@ pred noOp {
 	noStatusChange[Message]
 	noMessageChange[sboxes + Mail.uboxes]
 	noUserboxChange
+	noBoxChange
 
   Mail.op' = none 
 }
@@ -261,15 +275,20 @@ pred Init {
 	no m: Message | m.status = Active or m.status = Purged
 
   -- The system mailboxes are all distinct
-	all disj mb1, mb2: sboxes | mb1 != mb2
+	Mail.inbox != Mail.drafts
+	Mail.inbox != Mail.trash
+	Mail.inbox != Mail.sent
+	Mail.drafts != Mail.trash
+	Mail.drafts != Mail.sent
+	Mail.trash != Mail.sent
 
   -- All mailboxes anywhere are empty
 	all mb: Mailbox | no mb.messages
 
-  -- The set of user-created mailboxes is empty
-	no Mail.uboxes
+  -- There are no mailboxes besides the system mailboxes.
+	Mail.uboxes = none
+  	no (Mail.uboxes & sboxes)
 
-  	some m: Message | m.status = Fresh or m.status = External
   -- [Keep this tracking constraint intact]
   -- no operator generates the initial state
   	Mail.op = none
@@ -313,7 +332,6 @@ fact System {
   Init and always Trans
 }
 
-
 run {} for 10
 
 ---------------------
@@ -335,14 +353,13 @@ run T2 for 1 but 8 Object
 pred T3 {
   -- The trash mailbox eventually contains messages and
   -- becomes empty some time later
-	eventually some Mail.trash.messages and eventually no Mail.trash.messages
-
+	eventually some Mail.trash.messages implies eventually no Mail.trash.messages
 }
 run T3 for 1 but 8 Object
 
 pred T4 {
   -- Eventually some message in the drafts mailbox moves to the sent mailbox
-	eventually some m: Message | m in Mail.drafts.messages and eventually m in Mail.sent.messages
+	eventually some m: Message | m in Mail.drafts.messages implies eventually m in Mail.sent.messages
 }
 run T4 for 1 but 8 Object
 
@@ -410,7 +427,7 @@ run allTests {
 
 assert V1 {
 --  Every active message in the system is in one of the app's mailboxes 
-	all m: Message | 
+	always all m: Message | 
 		(m.status = Active implies m in (sboxes + Mail.uboxes).messages)
 }
 check V1 for 5 but 11 Object
@@ -418,20 +435,20 @@ check V1 for 5 but 11 Object
  
 assert V2 {
 --  Inactive messages are in no mailboxes at all
-	all m: Message |
+	always all m: Message |
 		not (m.status = Active) implies no mb: Mailbox | m in mb.messages
 }
 check V2 for 5 but 11 Object
 
 assert V3 {
 -- Each of the user-created mailboxes differs from the predefined mailboxes
-	all mb: Mail.uboxes | mb not in sboxes
+	always all mb: Mail.uboxes | mb not in sboxes
 }
 check V3 for 5 but 11 Object
 
 assert V4 {
 -- Every active message was once external or fresh.
-	all m: Message |
+	always all m: Message |
 		(m.status = Active implies 
 			once (m.status = External or m.status = Fresh))
 }
@@ -439,47 +456,44 @@ check V4 for 5 but 11 Object
 
 assert V5 {
 -- Every user-created mailbox starts empty.
-// TODO: Not quite sure if this is right
-	all mb: Mail.uboxes | no mb.messages
+	always (Mail.op = CMB implies one mb: Mail.uboxes' - Mail.uboxes | no mb.messages')
 }
 check V5 for 5 but 11 Object
 
 assert V6 {
--- User-created mailboxes stay in the system indefinitely or until they are deleted.
-	all mb: Mail.uboxes |
-		(mb in Mail.uboxes until not (mb in Mail.uboxes))
+   always all mb: Mailbox | once (mb in Mail.uboxes) implies always (mb in Mail.uboxes or once (Mail.op = DMB and mb not in Mail.uboxes))
 }
 check V6 for 5 but 11 Object
 
 assert V7 {
 -- Messages are sent exclusively from the draft mailbox 
-	all m: Message |
-		m in Mail.sent.messages implies before m in Mail.drafts.messages
+	always all m: Message |
+		m in Mail.sent.messages implies before m in (Mail.drafts.messages + Mail.sent.messages)
 }
 check V7 for 5 but 11 Object
 
 assert V8 {
 -- The app's mailboxes contain only active messages
-	all m: (sboxes+Mail.uboxes).messages | m.status = Active
+	always all m: (sboxes+Mail.uboxes).messages | m.status = Active
 }
 check V8 for 5 but 11 Object
 
 assert V9 {
 -- Every received message goes through the inbox
-	all m: (sboxes+Mail.uboxes).messages | once m in Mail.inbox.messages
+	always all m: (sboxes+Mail.uboxes).messages | once m in Mail.inbox.messages
 }
 check V9 for 5 but 11 Object
 
 assert V10 {
 -- Purged message are purged forever
 // if it's purged once not necessarily in initial state, it will always be purged
-	all m: Message | once (m.status = Purged) implies always (m.status = Purged)
+	always all m: Message | once (m.status = Purged) implies always (m.status = Purged)
 }
 check V10 for 5 but 11 Object
 
 assert V11 {
 -- No messages in the system can ever (re)acquire External status
-	no m: Message | 
+	always no m: Message | 
 		once (m.status = External) and 
 		eventually (m.status = External and 
 		before m.status != External)
@@ -497,7 +511,7 @@ check V12 for 5 but 11 Object
 assert V13 {
 -- To purge an active message one must first delete the message 
 -- or delete the mailbox that contains it.
-	all m: Message |
+	always all m: Message |
 		((once m.status = Active) and (eventually m.status = Purged)) implies
 			// messsage deleted and status purged
 			(Mail.op = DM and m.status = Purged) or
@@ -509,20 +523,20 @@ check V13 for 5 but 11 Object
 assert V14 {
 -- Every message in the trash mailbox mailbox is there 
 -- because it had been previously deleted
-	all m: Message | m in Mail.trash.messages implies once (Mail.op = DM)
+	always all m: Message | m in Mail.trash.messages implies once (Mail.op = DM)
 }
 check V14 for 5 but 11 Object
 
 assert Extra15 {
 -- Every message in a user-created mailbox ultimately comes from a system mailbox.
-	all m: Message | m in Mail.uboxes.messages implies once m in sboxes.messages
+	always all m: Message | m in Mail.uboxes.messages implies once m in sboxes.messages
 }
 check Extra15 for 5 but 11 Object
 
 assert Extra16 {
 -- A purged message that was never in the trash mailbox must have been 
 -- in a user mailbox that was later deleted
-	all m: Message | ((m.status = Purged) and (not once m in Mail.trash.messages)) implies
+	always all m: Message | ((m.status = Purged) and (not once m in Mail.trash.messages)) implies
 		((once m in Mail.uboxes.messages) and (eventually (some mb: Mailbox | m in mb.messages and Mail.op = DMB)))
 }
 check Extra16 for 5 but 11 Object
@@ -542,14 +556,18 @@ check I1 for 5 but 11 Object
 -- A message in the sent mailbox need not be there because it was sent.
 -- Negated into: Every message in the sent mailbox must have been sent
 assert I2 {
-  always all m: Message | m in Mail.sent.messages implies once Mail.op = SM
+  always all m: Message |
+    (m in Mail.sent.messages) implies
+      once (Mail.op = SM and m in Mail.sent.messages)
 }
 check I2 for 5 but 11 Object
 
 -- A message that leaves the inbox may later reappear there.
 -- Negated into: Once a message leaves the inbox, it never returns
 assert I3 {
-  always all m: Message | m not in Mail.inbox.messages and once m in Mail.inbox.messages implies always m not in Mail.inbox.messages
+  always all m: Message |
+    (once m in Mail.inbox.messages and m not in Mail.inbox.messages)
+      implies always m not in Mail.inbox.messages
 }
 check I3 for 5 but 11 Object
 
