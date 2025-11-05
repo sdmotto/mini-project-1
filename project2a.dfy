@@ -29,6 +29,7 @@ ghost predicate isEmpty<T>(l: List<T>)
 }
 
 function append<T>(l1: List<T>, l2:List<T>): List<T>
+ensures elements(append(l1, l2)) == elements(l1) + elements(l2)
 {
   match l1
   case Nil => l2
@@ -36,6 +37,7 @@ function append<T>(l1: List<T>, l2:List<T>): List<T>
 }
 
 function reverse<T>(l: List<T>): List<T>
+ensures elements(reverse(l)) == elements(l)
 {
   match l
   case Nil => Nil
@@ -57,6 +59,8 @@ method testAppendReverse()
  
 
 function len<T>(l: List<T>): int
+ensures len(l) >= 0
+ensures isEmpty(l) <==> len(l) == 0
 {
   match l
   case Nil => 0
