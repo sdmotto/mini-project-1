@@ -101,7 +101,7 @@ method testLast()
   assert last(l2) == 6;
 }
 
-
+// TODO: Isn't this the strongest contract? I didn't add this
 predicate member<T(==)>(x: T, l: List<T>)
   ensures member(x, l) <==> x in elements(l)
 {
@@ -116,13 +116,17 @@ predicate member<T(==)>(x: T, l: List<T>)
 //-----------
 
 function max(l: List<int>): int
+requires !isEmpty(l)
+decreases len(l)
 {
   match l
   case Cons(x, Nil) => x
   case Cons(x, Cons(y, t)) => 
     if x < y then 
+    assert len(Cons(y, t))<len(Cons(x, Cons(y, t)));
       max(Cons(y, t)) 
     else 
+    assert len(Cons(x, t))<len(Cons(x, Cons(y, t)));
       max(Cons(x, t))
 }
 
@@ -134,6 +138,19 @@ method testMax()
 
 
 function min(l: List<int>): int
+requires !isEmpty(l)
+decreases len(l)
+{
+  match l
+  case Cons(x, Nil) => x
+  case Cons(x, Cons(y, t)) => 
+    if x < y then 
+    assert len(Cons(y, t))<len(Cons(x, Cons(y, t)));
+      min(Cons(x, t)) 
+    else 
+    assert len(Cons(x, t))<len(Cons(x, Cons(y, t)));
+      min(Cons(y, t))
+}
 
 
 method testMin()
