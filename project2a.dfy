@@ -4,7 +4,7 @@
 //
 // Mini project 2 -- Part A
 //
-// Name(s):  
+// Name(s):  Muhammad & Sam
 //
 //===============================================
 
@@ -69,18 +69,29 @@ ensures isEmpty(l) <==> len(l) == 0
 
 
 function first<T>(l: List<T>): T
+requires !isEmpty(l)
+ensures first(l) in elements(l)
 {
   l.head
 }
 
 
 function rest<T>(l: List<T>): List<T>
+  requires !isEmpty(l)
+  ensures rest(l) == l.tail
 {
   l.tail
 }
 
 
 function last<T>(l: List<T>): T
+requires !isEmpty(l)
+ensures last(l) in elements(l)
+{
+  match l
+  case Cons(h, Nil) => h // base case
+  case Cons(h, t) => last(t) // recursive case
+}
 
 method testLast()
 {
