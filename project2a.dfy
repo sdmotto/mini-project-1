@@ -172,7 +172,14 @@ ghost predicate isIncreasing(l: List<int>)
 }
 
 predicate memberInc(x: int, l: List<int>)
-
+// TODO: Working on this
+//   requires isIncreasing(l)
+//   ensures member(x, l) <==> x in elements(l)
+// {
+//   match l
+//   case Nil => false
+//   case Cons(y, t) => x == y || member(x, t)
+// }
 
 function insert(x: int, l: List<int>) :List<int>
 
