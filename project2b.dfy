@@ -4,7 +4,7 @@
 //
 // Mini project 2 -- Part B
 //
-// Name(s):
+// Name(s): Muhammad & Sam & David
 // 
 //===============================================
 
@@ -17,7 +17,65 @@ module List {
   datatype List<T> = Nil | Cons(head: T, tail: List<T>) 
 
   // Add here functions and lemmas from Part A as explained 
-  // in the assignment. 
+  // in the assignment.
+  
+  ghost function elements<T>(l: List<T>): set<T>
+  {
+    match l
+    case Nil => {}
+    case Cons(x, t) => {x} + elements(t)  
+  }
+
+  // function len<T>(l: List<T>): int
+  // ensures len(l) >= 0
+  // ensures isEmpty(l) <==> len(l) == 0
+  // {
+  //   match l
+  //   case Nil => 0
+  //   case Cons(_, t) => 1 + len(t)
+  // }
+
+  function append<T>(l1: List<T>, l2:List<T>): List<T>
+  ensures elements(append(l1, l2)) == elements(l1) + elements(l2)
+  {
+    match l1
+    case Nil => l2
+    case Cons(h1, t1) => Cons(h1, append(t1, l2))
+  }
+
+  ghost predicate isIncreasing(l: List<int>)
+  {
+    match l
+    case Cons(a, Cons(b, t)) => a < b && isIncreasing(Cons(b, t))
+    case _ => true
+  }
+
+  ghost predicate isEmpty<T>(l: List<T>)
+  {
+    l == Nil
+  }
+
+  function last<T>(l: List<T>): T
+  requires !isEmpty(l)
+  ensures last(l) in elements(l)
+  {
+    match l
+    case Cons(h, Nil) => h // base case
+    case Cons(h, t) => last(t) // recursive case
+  }
+
+  function first<T>(l: List<T>): T
+  requires !isEmpty(l)
+  ensures first(l) in elements(l)
+  {
+    l.head
+  }
+
+  lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
+  requires isIncreasing(l1)
+  requires isIncreasing(l2)
+  requires isEmpty(l1) || isEmpty(l2) || last(l1) < first(l2) 
+  ensures isIncreasing(append(l1, l2))
 }
 
 //--------------
@@ -49,10 +107,12 @@ ghost predicate IsSearchTree(t: BTree)
 }
 
 function collect(t: BTree): List.List<int>
+requires IsSearchTree(t)
+ensures elements(t) == List.elements(collect(t))
 {
   match t
   case Leaf => List.Nil
-  case Node(l, y, r) => 
+  case Node(l, y, r) =>
     List.append(collect(l), List.Cons(y, collect(r)))
 }
 
@@ -61,9 +121,17 @@ lemma {:induction false} Increasing(t: BTree)
   requires IsSearchTree(t)
   ensures List.isIncreasing(collect(t))
 {
+    match t
+    case Leaf => // trivial base case
+    case Node(l, y, r) =>
+      Increasing(l);
+      Increasing(r);
+      List.AppendIncreasing(collect(l), List.Cons(y, collect(r)));
 }
 
 function member(x: int, t: BTree): bool
+requires IsSearchTree(t)
+ensures member(x, t) <==> x in elements(t)
 {
   match t
   case Leaf => false
@@ -77,6 +145,9 @@ function member2(x: int, t: BTree): bool
 
 
 function insert(x: int, t: BTree): BTree
+requires IsSearchTree(t)
+ensures elements(insert(x, t)) == elements(t) + {x}
+ensures IsSearchTree(insert(x, t))
 {
   match t
   case Leaf => Node(Leaf, x, Leaf)
@@ -87,6 +158,9 @@ function insert(x: int, t: BTree): BTree
 }
 
 function remove(x: int, t: BTree): BTree
+requires IsSearchTree(t)
+decreases t
+ensures elements(remove(x, t)) == elements(t) - {x}
 {
   match t
   case Leaf => t
@@ -108,6 +182,11 @@ function max(t: BTree): int
 
 
 function pred(x: int, t: BTree): int
+requires IsSearchTree(t)
+ensures pred(x, t) <= x
+ensures pred(x, t) in elements(t) + {x}
+//ensures forall a :: a in elements(t) ==> pred(x, t) >= a || a >=x // This doesnt pass, but I think we need it 
+// *ask Arnold
 {
   match t
   case Leaf => x
@@ -161,3 +240,12 @@ method test() {
   assert pred(16, t17) == 10;
   assert pred(9, t17) == 9;
 } 
+
+
+
+
+// AI log:
+
+// Chatbot: GPT-5
+
+//  Prompt 1: Conceptually, how can you prove an inductive lemma in Dafny with language induction disabled

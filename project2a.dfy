@@ -4,7 +4,7 @@
 //
 // Mini project 2 -- Part A
 //
-// Name(s):  Muhammad & Sam
+// Name(s):  Muhammad & Sam & David
 //
 //===============================================
 
@@ -102,8 +102,10 @@ method testLast()
 }
 
 // TODO: Isn't this the strongest contract? I didn't add this
+// *ask Arnold
 predicate member<T(==)>(x: T, l: List<T>)
   ensures member(x, l) <==> x in elements(l)
+  ensures member(x, l) ==> !isEmpty(l) // added this, doesnt help, not strong enough for insert // *ask Arnold
 {
   match l
   case Nil => false
@@ -172,30 +174,69 @@ ghost predicate isIncreasing(l: List<int>)
 }
 
 predicate memberInc(x: int, l: List<int>)
-// TODO: Working on this
-//   requires isIncreasing(l)
-//   ensures member(x, l) <==> x in elements(l)
-// {
-//   match l
-//   case Nil => false
-//   case Cons(y, t) => x == y || member(x, t)
-// }
+  requires isIncreasing(l)
+  ensures member(x, l) <==> x in elements(l)
+{
+  match l
+  case Nil => false
+  case Cons(y, t) =>
+    if x == y then true 
+    else if x < y then false 
+    else memberInc(x, t)
+}
 
+// TODO
 function insert(x: int, l: List<int>) :List<int>
-
+requires isIncreasing(l)
+ensures isIncreasing(insert(x, l))
+ensures elements(insert(x, l)) == elements(l) + {x}
+// TODO: uncomment this later to check if member implementation works, // *ask Arnold
+//ensures member(x,l)
+{
+  match l
+  case Nil => Cons(x, Nil)
+  case Cons(y, t) =>
+    if x < y then Cons(x, Cons(y, t))
+    else if x > y then Cons(y, insert(x, t))
+    else l
+}
 
 function remove(x: int, l:List<int>) :List<int>
+requires isIncreasing(l)
+ensures isIncreasing(remove(x, l))
+ensures elements(remove(x, l)) == elements(l) - {x}
 {
   match l
   case Nil => Nil
   case Cons(y, t) => 
     if x < y then 
+      Increasing1(l);
       l 
     else if y == x then 
+      Increasing1(l);
       t
     else
       Cons(y, remove(x, t))
 }
+
+// function remove'(x: int, l:List<int>) :List<int>
+// requires isIncreasing(l)
+// ensures isIncreasing(remove'(x, l))
+// ensures x !in elements(l)
+// //ensures elements(remove(x, l)) == elements(l) - {x}
+// {
+//   match l
+//   case Nil => Nil
+//   case Cons(y, t) => 
+//     if x < y then 
+//       Increasing2(Cons(y, t));
+//       l 
+//     else if y == x then 
+//       Increasing1(l);
+//       t
+//     else
+//       Cons(y, remove(x, t))
+// }
 
 //--------
 // Lemmas
@@ -205,24 +246,55 @@ lemma {:induction false} MaxLast(l: List<int>)
   requires !isEmpty(l)
   requires isIncreasing(l)
   ensures max(l) == last(l)
+  {
+    match l
+    case Cons(h, t) => 
+      if isEmpty(t) { 
+        assert max(l) == h;
+        assert last(l) == h;
+      } else {
+        MaxLast(t);
+      }
+  }
 
-
+// TODO // *ask Arnold about all lemmas
 lemma {:induction false} MinFirst(l: List<int>)
+// why is it not working??
   requires !isEmpty(l)
   requires isIncreasing(l)
   ensures min(l) == first(l)
+  {
+    match l
+    case Cons(h, t) => 
+      if isEmpty(t) { 
+        assert min(l) == h;
+        assert first(l) == h;
+      } else {
+        //assert({Increasing1(l)}; h <= min(t));
+      }
+  }
 
-
+// TODO
 lemma {:induction false} Increasing1(l: List<int>)
   requires isIncreasing(l)
   requires !isEmpty(l)
   ensures forall x :: x in elements(l.tail) ==> first(l) < x
+  {
+    calc {
+      min(l);
+    == {MinFirst(l);}
+      first(l);
+    } 
+  }
 
-
+// TODO
 lemma {:induction false} Increasing2(l: List<int>)
   requires isIncreasing(l)
   requires !isEmpty(l)
   ensures forall x :: x < first(l) ==> x !in elements(rest(l))
+  {
+    //{ Increasing2()}
+  }
 
 
 lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
@@ -230,6 +302,19 @@ lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
   requires isIncreasing(l2)
   requires isEmpty(l1) || isEmpty(l2) || last(l1) < first(l2) 
   ensures isIncreasing(append(l1, l2))
+{
+  if isEmpty(l1) || isEmpty(l2) {
+    
+  } else {
+    match l1
+    case Cons(h, t) =>
+      if (isEmpty(t)) {
+        assert isIncreasing(append(l1, l2));
+      } else {
+        AppendIncreasing(t, l2);
+      }
+  }
+}
 
 
 lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
