@@ -4,7 +4,7 @@
 //
 // Mini project 2 -- Part A
 //
-// Name(s):  Muhammad & Sam & David
+// Name(s): Sam Motto, Muhammad Khalid, David Rhoades
 //
 //===============================================
 
@@ -101,17 +101,13 @@ method testLast()
   assert last(l2) == 6;
 }
 
-// TODO: Isn't this the strongest contract? I didn't add this
-// *ask Arnold
 predicate member<T(==)>(x: T, l: List<T>)
   ensures member(x, l) <==> x in elements(l)
-  ensures member(x, l) ==> !isEmpty(l) // added this, doesnt help, not strong enough for insert // *ask Arnold
 {
   match l
   case Nil => false
   case Cons(y, t) => x == y || member(x, t)
 }
-
 
 //-----------
 // Int lists
@@ -120,6 +116,8 @@ predicate member<T(==)>(x: T, l: List<T>)
 function max(l: List<int>): int
 requires !isEmpty(l)
 decreases len(l)
+ensures forall x :: x in elements(l) ==> max(l) >= x
+ensures max(l) in elements(l)
 {
   match l
   case Cons(x, Nil) => x
@@ -142,6 +140,8 @@ method testMax()
 function min(l: List<int>): int
 requires !isEmpty(l)
 decreases len(l)
+ensures forall x :: x in elements(l) ==> min(l) <= x
+ensures min(l) in elements(l)
 {
   match l
   case Cons(x, Nil) => x
@@ -185,13 +185,10 @@ predicate memberInc(x: int, l: List<int>)
     else memberInc(x, t)
 }
 
-// TODO
 function insert(x: int, l: List<int>) :List<int>
 requires isIncreasing(l)
 ensures isIncreasing(insert(x, l))
 ensures elements(insert(x, l)) == elements(l) + {x}
-// TODO: uncomment this later to check if member implementation works, // *ask Arnold
-//ensures member(x,l)
 {
   match l
   case Nil => Cons(x, Nil)
@@ -219,25 +216,6 @@ ensures elements(remove(x, l)) == elements(l) - {x}
       Cons(y, remove(x, t))
 }
 
-// function remove'(x: int, l:List<int>) :List<int>
-// requires isIncreasing(l)
-// ensures isIncreasing(remove'(x, l))
-// ensures x !in elements(l)
-// //ensures elements(remove(x, l)) == elements(l) - {x}
-// {
-//   match l
-//   case Nil => Nil
-//   case Cons(y, t) => 
-//     if x < y then 
-//       Increasing2(Cons(y, t));
-//       l 
-//     else if y == x then 
-//       Increasing1(l);
-//       t
-//     else
-//       Cons(y, remove(x, t))
-// }
-
 //--------
 // Lemmas
 //--------
@@ -248,33 +226,21 @@ lemma {:induction false} MaxLast(l: List<int>)
   ensures max(l) == last(l)
   {
     match l
-    case Cons(h, t) => 
-      if isEmpty(t) { 
-        assert max(l) == h;
-        assert last(l) == h;
-      } else {
-        MaxLast(t);
-      }
+    case Cons(h, Nil) =>
+    case Cons(h, t) => MaxLast(t);
   }
 
-// TODO // *ask Arnold about all lemmas
 lemma {:induction false} MinFirst(l: List<int>)
-// why is it not working??
   requires !isEmpty(l)
   requires isIncreasing(l)
   ensures min(l) == first(l)
   {
     match l
-    case Cons(h, t) => 
-      if isEmpty(t) { 
-        assert min(l) == h;
-        assert first(l) == h;
-      } else {
-        //assert({Increasing1(l)}; h <= min(t));
-      }
+    case Cons(h, Nil) =>
+    case Cons(h, t) => MinFirst(t);
   }
 
-// TODO
+// // TODO
 lemma {:induction false} Increasing1(l: List<int>)
   requires isIncreasing(l)
   requires !isEmpty(l)

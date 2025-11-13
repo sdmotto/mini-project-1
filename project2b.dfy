@@ -4,7 +4,7 @@
 //
 // Mini project 2 -- Part B
 //
-// Name(s): Muhammad & Sam & David
+// Name(s): Sam Motto, Muhammad Khalid, David Rhoades
 // 
 //===============================================
 
