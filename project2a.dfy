@@ -240,37 +240,37 @@ lemma {:induction false} MinFirst(l: List<int>)
     case Cons(h, t) => MinFirst(t);
   }
 
-// // TODO
 lemma {:induction false} Increasing1(l: List<int>)
   requires isIncreasing(l)
   requires !isEmpty(l)
   ensures forall x :: x in elements(l.tail) ==> first(l) < x
   {
-    calc {
-      min(l);
-    == {MinFirst(l);}
-      first(l);
-    } 
+    match l
+    case Cons(h, Nil) =>
+    case Cons(h, t) => Increasing1(t);
   }
 
-// TODO
 lemma {:induction false} Increasing2(l: List<int>)
   requires isIncreasing(l)
   requires !isEmpty(l)
   ensures forall x :: x < first(l) ==> x !in elements(rest(l))
   {
-    //{ Increasing2()}
+    match l
+    case Cons(h, Nil) =>
+    case Cons(h, t) => Increasing1(t);
   }
 
-
+// Imperative
 lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
   requires isIncreasing(l1)
   requires isIncreasing(l2)
   requires isEmpty(l1) || isEmpty(l2) || last(l1) < first(l2) 
   ensures isIncreasing(append(l1, l2))
 {
-  if isEmpty(l1) || isEmpty(l2) {
-    
+  if isEmpty(l1)  {
+    assert isIncreasing(l2);
+  } else if isEmpty(l2) {
+    AppendIncreasing(l1.tail, Nil);
   } else {
     match l1
     case Cons(h, t) =>
@@ -282,6 +282,61 @@ lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
   }
 }
 
-
+// [1,2,3] [4,5,6]
+// [1,2,3,4,5,6] -> [6,5,4,3,2,1]
+// [6,5,4] [3,2,1] -> [6,5,4,3,2,1]
 lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
   ensures reverse(append(l1, l2)) == append(reverse(l2), reverse(l1))
+  decreases len(l1)
+{
+  match l1
+  case Nil =>
+    calc {
+      reverse(append(l1, l2));
+    ==
+      reverse(append(Nil, l2));
+    ==
+      reverse(l2);
+    == { AppendNil(reverse(l2)); }
+      append(reverse(l2), Nil);
+    }
+  case Cons(h, t) =>
+    AppendReverse(remove(last, l1));
+
+
+    // assert Cons(h, t) == reverse(l1);
+    // assert len(Cons(h, t)) == len(reverse(l1));
+    // assert len(t) < len(reverse(l1));
+    // { ReverseLen(l1); }
+    // assert len(reverse(l1)) == len(l1);
+    // assert len(t) < len(l1);
+
+
+
+    // assert elements(reverse(l1)) == elements(l1);
+    // assert elements(Cons(h,t)) == elements(l1);
+    // assert {h} + elements(t) == elements(l1);
+    // // assert elements(t) == elements(l1) - {h};
+    // assert(len(t) < len(l1));
+    // { ReverseLen(t); }
+    // assert(len(reverse(t)) < len(l1));
+
+    // //assert reverse(append(l1, l2)) == append(reverse(l2), reverse(l1));
+    // {ReverseReverse(t);}
+    // AppendReverse(reverse(t), Cons(h, l2));
+}
+
+// helper lemmas
+lemma {:induction false} AppendNil<T>(l1: List<T>)
+ensures append(l1, Nil) == l1
+{
+  match l1
+  case Nil =>
+  case Cons(h, t) => AppendNil(t);
+}
+
+lemma ReverseLen<T>(l1: List<T>)
+ensures len(l1) == len(reverse(l1))
+
+lemma ReverseReverse<T>(l1: List<T>)
+ensures elements(l1) == elements(reverse(reverse(l1)))
