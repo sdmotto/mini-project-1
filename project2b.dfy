@@ -185,8 +185,7 @@ function pred(x: int, t: BTree): int
 requires IsSearchTree(t)
 ensures pred(x, t) <= x
 ensures pred(x, t) in elements(t) + {x}
-//ensures forall a :: a in elements(t) ==> pred(x, t) >= a || a >=x // This doesnt pass, but I think we need it 
-// *ask Arnold
+//ensures forall a :: a in elements(t) ==> pred(x, t) >= a || a >=x // This doesnt pass, but I think we need it
 {
   match t
   case Leaf => x

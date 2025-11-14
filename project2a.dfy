@@ -287,9 +287,8 @@ lemma {:induction false} AppendIncreasing(l1: List<int>, l2:List<int>)
 // [6,5,4] [3,2,1] -> [6,5,4,3,2,1]
 lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
   ensures reverse(append(l1, l2)) == append(reverse(l2), reverse(l1))
-  decreases len(l1)
 {
-  match reverse(l1)
+  match l1
   case Nil =>
     calc {
       reverse(append(l1, l2));
@@ -301,12 +300,23 @@ lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
       append(reverse(l2), Nil);
     }
   case Cons(h, t) =>
-  // without these 3 it can't prove it's decreasing
-    { ReverseLen(l1); }
-    { ReverseLen(t); }
-    assert(len(reverse(t)) < len(l1));
-
-    AppendReverse(reverse(t), Cons(h, l2));
+    calc {
+      reverse(append(l1, l2));
+    ==
+      reverse(append(Cons(h, t), l2));
+    ==
+      reverse(Cons(h, append(t, l2)));
+    ==
+      append(reverse(append(t, l2)), Cons(h, Nil));
+    == { AppendReverse(t, l2); }
+      append(append(reverse(l2), reverse(t)), Cons(h, Nil));
+    == { Assoc(reverse(l2), reverse(t), Cons(h, Nil)); }
+      append(reverse(l2), append(reverse(t), Cons(h, Nil)));
+    ==
+      append(reverse(l2), reverse(Cons(h, t)));
+    ==
+      append(reverse(l2), reverse(l1));
+    }
 }
 
 // helper lemmas
@@ -318,8 +328,6 @@ ensures append(l1, Nil) == l1
   case Cons(h, t) => AppendNil(t);
 }
 
-lemma ReverseLen<T>(l1: List<T>)
-ensures len(l1) == len(reverse(l1))
-
-lemma ReverseReverse<T>(l1: List<T>)
-ensures elements(l1) == elements(reverse(reverse(l1)))
+// no proof :(
+lemma {:induction true} Assoc<T>(l1: List<T>, l2: List<T>, l3: List<T>)
+ensures append(append(l1, l2), l3) == append(l1, append(l2, l3))
