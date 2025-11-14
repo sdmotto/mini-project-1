@@ -289,7 +289,7 @@ lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
   ensures reverse(append(l1, l2)) == append(reverse(l2), reverse(l1))
   decreases len(l1)
 {
-  match l1
+  match reverse(l1)
   case Nil =>
     calc {
       reverse(append(l1, l2));
@@ -301,29 +301,12 @@ lemma {:induction false} AppendReverse<T>(l1: List<T>, l2: List<T>)
       append(reverse(l2), Nil);
     }
   case Cons(h, t) =>
-    AppendReverse(remove(last, l1));
+  // without these 3 it can't prove it's decreasing
+    { ReverseLen(l1); }
+    { ReverseLen(t); }
+    assert(len(reverse(t)) < len(l1));
 
-
-    // assert Cons(h, t) == reverse(l1);
-    // assert len(Cons(h, t)) == len(reverse(l1));
-    // assert len(t) < len(reverse(l1));
-    // { ReverseLen(l1); }
-    // assert len(reverse(l1)) == len(l1);
-    // assert len(t) < len(l1);
-
-
-
-    // assert elements(reverse(l1)) == elements(l1);
-    // assert elements(Cons(h,t)) == elements(l1);
-    // assert {h} + elements(t) == elements(l1);
-    // // assert elements(t) == elements(l1) - {h};
-    // assert(len(t) < len(l1));
-    // { ReverseLen(t); }
-    // assert(len(reverse(t)) < len(l1));
-
-    // //assert reverse(append(l1, l2)) == append(reverse(l2), reverse(l1));
-    // {ReverseReverse(t);}
-    // AppendReverse(reverse(t), Cons(h, l2));
+    AppendReverse(reverse(t), Cons(h, l2));
 }
 
 // helper lemmas

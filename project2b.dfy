@@ -249,3 +249,5 @@ method test() {
 // Chatbot: GPT-5
 
 //  Prompt 1: Conceptually, how can you prove an inductive lemma in Dafny with language induction disabled
+
+// Prompt 2: Give me a proof that appending the reverse of two lists is the same as reversing the result of appending the same two lists
