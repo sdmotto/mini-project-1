@@ -5,7 +5,7 @@
 
   Mini Project 3 - Part D
 
-  Your name(s): Example solution
+  Your name(s): Sam Motto, Muhammad Khalid, David Rhoades
   ===============================================*/
 
 // Auxiliary predicate

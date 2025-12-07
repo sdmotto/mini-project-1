@@ -4,7 +4,7 @@
 
   Mini Project 3 - Part C
 
-  Your name(s): 
+  Your name(s): Sam Motto, Muhammad Khalid, David Rhoades
   ===============================================*/
 
 include "Option.dfy"

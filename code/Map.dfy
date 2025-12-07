@@ -5,7 +5,7 @@
 
   Project 3 -- Part A
 
-  Your name(s): 
+  Your name(s): Sam Motto, Muhammad Khalid, David Rhoades
   ===============================================*/
 
 include "Option.dfy"
@@ -41,36 +41,49 @@ module Map {
   // A map m is valid iff, as a list, it contains no repeated elements and
   // every key in m has exactly one associated value (no contract needed) 
   ghost predicate isValid<T(!new)>(m: Map<T>)
+    decreases m
   {
-    true // replace this line with your definition
+    match m
+    case Nil => true
+    case Cons(e, t) =>
+      (forall x :: x in entries(t) ==> key(x) != key(e)) && isValid(t) 
   }
 
   // For every value type T, emptyMap<T>() is 
   // the empty map of elements of type T
   function emptyMap<T(!new)>(): Map<T> 
+  ensures isValid(emptyMap<T>())
+  ensures entries(emptyMap<T>()) == {}
   { Nil }
 
   // isEmpty(m) is true iff m has no entries 
   predicate isEmpty<T(!new)>(m: Map<T>)
+  requires isValid(m)
+  ensures isEmpty(m) <==> entries(m) == {}
   { m == Nil }
 
   // size(m) is the number of entries in m
-  function size<T(==,!new)>(m: Map<T>): nat 
+  function size<T(==,!new)>(m: Map<T>): nat
+  requires isValid(m)
+  ensures size(m) == len(m)
   {
     match m
     case Nil => 0
     case Cons(_, t) => 1 + size(t)
   }
 
-  // keys(m) is the set of keys in m's entries
+  // keys(m) is the set of keys in m's entries TODO
   function keys<T(!new)>(m: Map<T>): set<int>
+  requires isValid(m)
+  ensures forall pair :: pair in entries(m) ==> key(pair) in keys(m)
+  ensures forall k :: k in keys(m) ==> exists e :: e in entries(m) && key(e) == k
   {
     match m
     case Nil => {}
     case Cons((k, v), t) => {k} + keys(t)
   }
 
-  // values(m) is the set of values in m's entries
+  // values(m) is the set of values in m's entries TODO
   function values<T(!new)>(m: Map<T>): set<T>
   {
     match m
@@ -82,6 +95,7 @@ module Map {
   // More precisely, it is Some(v) if k has an associated value v,
   // and is None otherwhise.
   function get<T(!new)>(m: Map<T>, k: int): Option<T>
+  requires isValid(m)
   {
     match m
     case Nil => None
@@ -142,3 +156,11 @@ method test() {
   vo := get(m, 3);            assert vo == None;
   vo := get(m, 9);            assert vo == Some("Lion");
 } 
+
+/* AI log: 
+
+prompt: "How does Dafny "There exists" work"
+Reflection: We used this to help write keys and values ...
+
+
+*/

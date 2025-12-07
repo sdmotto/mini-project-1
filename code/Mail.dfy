@@ -4,7 +4,7 @@
 
   Mini Project 3 - Part B
 
-  Your name(s): 
+  Your name(s): Sam Motto, Muhammad Khalid, David Rhoades
   ===============================================*/
 
 include "List.dfy"
@@ -46,7 +46,11 @@ class Message
     ensures sender == s
     ensures recipients == []
   {
-  // replace with your implementation
+    id := new MessageId();
+    date := new Date();
+    content := "";
+    sender := s;
+    recipients := [];
   }
 
   method setContent(c: string)
@@ -55,7 +59,7 @@ class Message
     ensures {id, date, sender} == old({id, date, sender})
     ensures recipients == old(recipients)
   {
-  // replace with your implementation
+    content := c;
   }
 
   method setDate(d: Date)
@@ -65,7 +69,7 @@ class Message
     ensures recipients == old(recipients)
     ensures content == old(content)
   {
-  // replace with your implementation
+    date := d;
   }
  
   method addRecipient(p: nat, r: Address)
@@ -78,7 +82,7 @@ class Message
     ensures {id, date, sender} == old({id, date, sender})
     ensures content == old(content)
   {
-  // replace with your implementation
+    recipients := recipients[..p] + [r] + recipients[p..];
   }
 }
 
@@ -95,6 +99,8 @@ class Mailbox {
  
   // Creates an empty mailbox with name n
   constructor (n: string)
+  ensures name == n
+  ensures messages == {}
   {
     name := n;
     messages := {};
@@ -102,6 +108,9 @@ class Mailbox {
 
   // Adds message m to the mailbox
   method add(m: Message)
+  modifies this
+  ensures messages == old(messages) + {m}
+  ensures name == old(name)
   {    
     messages := { m } + messages;
   }
@@ -109,12 +118,18 @@ class Mailbox {
   // Removes message m from mailbox
   // m need not be in the mailbox 
   method remove(m: Message)
+  modifies this
+  ensures messages == old(messages) - {m}
+  ensures name == old(name)
   {
     messages := messages - { m };
   }
 
   // Empties the mailbox
   method empty()
+  modifies this
+  ensures messages == {}
+  ensures name == old(name)
   {
     messages := {};
   }
@@ -142,46 +157,73 @@ class MailApp {
   var userboxList: List<Mailbox>
 
   // Class invariant
-  ghost predicate isValid() 
+  ghost predicate isValid()
+  reads this
   {
     // replace each occurrence of `true` by your formulation 
     // of the invariants described below
     //----------------------------------------------------------
     // Abstract state invariants
     //----------------------------------------------------------
+
     // 1. all system mailboxes (inbox, ..., sent) are distinct
-    && true
+       inbox != drafts
+    && inbox != trash
+    && inbox != sent
+    && drafts != trash
+    && drafts != sent
+    && trash != sent
+
     // 2. none of the system mailboxes are in the set
     //    of user-defined mailboxes
-    && true
+    && inbox !in userBoxes
+    && drafts !in userBoxes
+    && trash !in userBoxes
+    && sent !in userBoxes
+
     //----------------------------------------------------------
     // Abstract-to-concrete state invariants
     //----------------------------------------------------------
     // userBoxes is the set of mailboxes in userboxList
-    && true
+    && userBoxes == L.elements(userboxList)
   }
 
   constructor ()
+  ensures isValid()
   {
     inbox := new Mailbox("Inbox");
     drafts := new Mailbox("Drafts");
     trash := new Mailbox("Trash");
     sent := new Mailbox("Sent");
     userboxList := Nil;
+
+    userBoxes := {};
   }
 
   // Deletes user-defined mailbox mb
   method deleteMailbox(mb: Mailbox)
+  modifies this
+  requires isValid()
+  ensures userBoxes == old(userBoxes) - {mb}
+  ensures isValid()
   {
     userboxList := remove(userboxList, mb);
+
+    userBoxes := userBoxes - {mb};
   }
 
   // Adds a new mailbox with name n to set of user-defined mailboxes
   // provided that no user-defined mailbox has name n already
   method newMailbox(n: string)
+  modifies this
+  requires isValid()
+  requires forall mb :: mb in userBoxes ==> mb.name != n
+  ensures isValid()
+  //TODO ask if we need frame conditions for these
   {
     var mb := new Mailbox(n);
     userboxList := Cons(mb, userboxList);
+    userBoxes := userBoxes + {mb};
   }
 
   // Adds a new message with sender s to the drafts mailbox
