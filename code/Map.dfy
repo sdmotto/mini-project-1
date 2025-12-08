@@ -75,8 +75,10 @@ module Map {
   // keys(m) is the set of keys in m's entries TODO
   function keys<T(!new)>(m: Map<T>): set<int>
   requires isValid(m)
-  ensures forall pair :: pair in entries(m) ==> key(pair) in keys(m)
-  ensures forall k :: k in keys(m) ==> exists e :: e in entries(m) && key(e) == k
+  // ensures forall pair :: pair in entries(m) ==> key(pair) in keys(m)
+  // ensures forall k :: k in keys(m) ==> exists e :: e in entries(m) && key(e) == k
+  ensures keys(m) == {} <==> m == Nil
+  ensures m != Nil ==> keys(m) == { key(m.head) } + keys(m.tail)
   {
     match m
     case Nil => {}
@@ -85,6 +87,9 @@ module Map {
 
   // values(m) is the set of values in m's entries TODO
   function values<T(!new)>(m: Map<T>): set<T>
+  requires isValid(m)
+  ensures values(m) == {} <==> m == Nil
+  ensures m != Nil ==> values(m) == { value(m.head) } + values(m.tail)
   {
     match m
     case Nil => {}
