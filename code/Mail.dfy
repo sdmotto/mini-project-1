@@ -190,10 +190,10 @@ class MailApp {
 
   constructor ()
   ensures isValid()
-  ensures sent.messages == {}
-  ensures drafts.messages == {}
-  ensures trash.messages == {}
-  ensures inbox.messages == {}
+  ensures sent.messages == {} && fresh(sent)
+  ensures drafts.messages == {} && fresh(drafts)
+  ensures trash.messages == {} && fresh(trash)
+  ensures inbox.messages == {} && fresh(inbox)
   ensures userBoxes == {}
   ensures inbox.name == "Inbox"
   ensures drafts.name == "Drafts"
@@ -226,7 +226,11 @@ class MailApp {
   modifies this
   requires isValid()
   requires forall mb :: mb in userBoxes ==> mb.name != n
-  ensures exists mb: Mailbox :: mb.name == n && userBoxes == old(userBoxes) + {mb} && mb.messages == {}
+  ensures inbox == old(inbox)
+  ensures drafts == old(drafts)
+  ensures sent == old(sent)
+  ensures trash == old(trash)
+  ensures exists mb: Mailbox :: mb.name == n && userBoxes == old(userBoxes) + {mb} && mb.messages == {} && fresh(mb)
   ensures isValid()
   {
     var mb := new Mailbox(n);
@@ -238,7 +242,7 @@ class MailApp {
   method newMessage(s: Address)
   modifies drafts
   requires isValid()
-  ensures exists m: Message :: m.sender == s && drafts.messages == old(drafts.messages) + {m}
+  ensures exists m: Message :: m.sender == s && drafts.messages == old(drafts.messages) + {m} && fresh(m)
   ensures isValid()
   {
     var m := new Message(s);
