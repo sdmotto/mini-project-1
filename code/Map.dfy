@@ -85,6 +85,10 @@ module Map {
     case Cons((k, v), t) => {k} + keys(t)
   }
 
+  lemma test<T(!new)>(m: Map<T>)
+  requires isValid(m)
+  ensures keys(m) == set e: Entry<T> | e in entries(m) :: key(e)
+
   // values(m) is the set of values in m's entries TODO
   function values<T(!new)>(m: Map<T>): set<T>
   requires isValid(m)
@@ -101,6 +105,7 @@ module Map {
   // and is None otherwhise.
   function get<T(!new)>(m: Map<T>, k: int): Option<T>
   requires isValid(m)
+  ensures get(m, k) == None <==> k !in keys(m)
   {
     match m
     case Nil => None
