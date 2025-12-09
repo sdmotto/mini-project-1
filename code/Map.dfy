@@ -46,7 +46,9 @@ module Map {
     match m
     case Nil => true
     case Cons(e, t) =>
-      (forall x :: x in entries(t) ==> key(x) != key(e)) && isValid(t) 
+      e !in entries(t) &&
+      (forall x :: x in entries(t) ==> key(x) != key(e)) &&
+      isValid(t)
   }
 
   // For every value type T, emptyMap<T>() is 
@@ -72,28 +74,22 @@ module Map {
     case Cons(_, t) => 1 + size(t)
   }
 
-  // keys(m) is the set of keys in m's entries TODO
+  // keys(m) is the set of keys in m's entries
   function keys<T(!new)>(m: Map<T>): set<int>
   requires isValid(m)
-  // ensures forall pair :: pair in entries(m) ==> key(pair) in keys(m)
-  // ensures forall k :: k in keys(m) ==> exists e :: e in entries(m) && key(e) == k
-  ensures keys(m) == {} <==> m == Nil
-  ensures m != Nil ==> keys(m) == { key(m.head) } + keys(m.tail)
+  ensures forall pair :: pair in entries(m) ==> key(pair) in keys(m)
+  ensures forall k :: k in keys(m) ==> exists v :: (k, v) in entries(m)
   {
     match m
     case Nil => {}
     case Cons((k, v), t) => {k} + keys(t)
   }
 
-  lemma test<T(!new)>(m: Map<T>)
-  requires isValid(m)
-  ensures keys(m) == set e: Entry<T> | e in entries(m) :: key(e)
-
-  // values(m) is the set of values in m's entries TODO
+  // values(m) is the set of values in m's entries
   function values<T(!new)>(m: Map<T>): set<T>
   requires isValid(m)
-  ensures values(m) == {} <==> m == Nil
-  ensures m != Nil ==> values(m) == { value(m.head) } + values(m.tail)
+  ensures forall pair :: pair in entries(m) ==> value(pair) in values(m)
+  ensures forall v :: v in values(m) ==> exists k :: (k, v) in entries(m)
   {
     match m
     case Nil => {}
@@ -106,6 +102,7 @@ module Map {
   function get<T(!new)>(m: Map<T>, k: int): Option<T>
   requires isValid(m)
   ensures get(m, k) == None <==> k !in keys(m)
+  ensures forall v :: get(m, k) == Some(v) <==> (k, v) in entries(m)
   {
     match m
     case Nil => None
@@ -119,6 +116,9 @@ module Map {
   // remove(m, k) is the map obtained from m by removing from it
   // the entry with key k, if any.
   function remove<T(!new)>(m: Map<T>, k: int): Map<T>
+  requires isValid(m)
+  ensures isValid(remove(m, k))
+  ensures keys(remove(m, k)) == keys(m) - {k}
   {
     match m
     case Nil => Nil
@@ -133,6 +133,9 @@ module Map {
   // put(m, k, v) is the map that associates key k with value v
   // and is othewise identical to m.
   function put<T(!new)>(m: Map<T>, k: int, v: T): Map<T>
+  requires isValid(m)
+  ensures isValid(put(m, k, v))
+  ensures keys(put(m, k, v)) == keys(m) + {k}
   {
     match m
     case Nil => Cons((k, v), Nil)

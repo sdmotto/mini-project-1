@@ -190,13 +190,21 @@ class MailApp {
 
   constructor ()
   ensures isValid()
+  ensures sent.messages == {}
+  ensures drafts.messages == {}
+  ensures trash.messages == {}
+  ensures inbox.messages == {}
+  ensures userBoxes == {}
+  ensures inbox.name == "Inbox"
+  ensures drafts.name == "Drafts"
+  ensures sent.name == "Sent"
+  ensures trash.name == "Trash"
   {
     inbox := new Mailbox("Inbox");
     drafts := new Mailbox("Drafts");
     trash := new Mailbox("Trash");
     sent := new Mailbox("Sent");
     userboxList := Nil;
-
     userBoxes := {};
   }
 
@@ -218,8 +226,8 @@ class MailApp {
   modifies this
   requires isValid()
   requires forall mb :: mb in userBoxes ==> mb.name != n
+  ensures exists mb: Mailbox :: mb.name == n && userBoxes == old(userBoxes) + {mb} && mb.messages == {}
   ensures isValid()
-  //TODO ask if we need frame conditions for these
   {
     var mb := new Mailbox(n);
     userboxList := Cons(mb, userboxList);
@@ -228,6 +236,10 @@ class MailApp {
 
   // Adds a new message with sender s to the drafts mailbox
   method newMessage(s: Address)
+  modifies drafts
+  requires isValid()
+  ensures exists m: Message :: m.sender == s && drafts.messages == old(drafts.messages) + {m}
+  ensures isValid()
   {
     var m := new Message(s);
     drafts.add(m);
@@ -235,6 +247,12 @@ class MailApp {
 
   // Moves message m from mailbox mb1 to a different mailbox mb2
   method moveMessage (m: Message, mb1: Mailbox, mb2: Mailbox)
+  modifies mb1, mb2
+  requires isValid()
+  requires mb1 != mb2
+  ensures mb1.messages == old(mb1.messages) - {m}
+  ensures mb2.messages == old(mb2.messages) + {m}
+  ensures isValid()
   {
     mb1.remove(m);
     mb2.add(m);
@@ -243,18 +261,33 @@ class MailApp {
   // Moves message m from non-null mailbox mb to the trash mailbox
   // provided that mb is not the trash mailbox
   method deleteMessage (m: Message, mb: Mailbox)
+  modifies mb, trash
+  requires isValid()
+  requires mb != trash
+  ensures mb.messages == old(mb.messages) - {m}
+  ensures trash.messages == old(trash.messages) + {m}
+  ensures isValid()
   {
     moveMessage(m, mb, trash);
   }
 
   // Moves message m from the drafts mailbox to the sent mailbox
   method sendMessage(m: Message)
+  modifies drafts, sent
+  requires isValid()
+  ensures drafts.messages == old(drafts.messages) - {m}
+  ensures sent.messages == old(sent.messages) + {m}
+  ensures isValid()
   {
     moveMessage(m, drafts, sent);
   }
 
   // Empties the trash mailbox
   method emptyTrash ()
+  modifies trash
+  requires isValid()
+  ensures trash.messages == {}
+  ensures isValid()
   {
     trash.empty();
   }
