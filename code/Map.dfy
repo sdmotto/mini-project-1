@@ -68,6 +68,7 @@ module Map {
   function size<T(==,!new)>(m: Map<T>): nat
   requires isValid(m)
   ensures size(m) == len(m)
+  ensures size(m) == |entries(m)|
   {
     match m
     case Nil => 0
@@ -170,10 +171,3 @@ method test() {
   vo := get(m, 9);            assert vo == Some("Lion");
 } 
 
-/* AI log: 
-
-prompt: "How does Dafny "There exists" work"
-Reflection: We used this to help write keys and values ...
-
-
-*/
